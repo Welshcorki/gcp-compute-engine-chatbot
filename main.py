@@ -25,9 +25,22 @@ app.add_middleware(
 def get_gemini_client():
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
+        # GCP Secret Manager fallback
+        try:
+            from google.cloud import secretmanager
+            client = secretmanager.SecretManagerServiceClient()
+            secret_name = "projects/584903808975/secrets/GEMINI_API_KEY/versions/latest"
+            response = client.access_secret_version(request={"name": secret_name})
+            api_key = response.payload.data.decode("UTF-8").strip()
+            # 캐싱용으로 환경변수에 저장
+            os.environ["GEMINI_API_KEY"] = api_key
+        except Exception as sm_err:
+            pass
+
+    if not api_key:
         raise HTTPException(
             status_code=500,
-            detail="GEMINI_API_KEY 환경변수가 설정되지 않았습니다. .env 파일 또는 시스템 환경변수를 확인하세요."
+            detail="GEMINI_API_KEY 환경변수가 설정되지 않았으며 Secret Manager에서도 읽어오지 못했습니다."
         )
     return genai.Client(api_key=api_key)
 
