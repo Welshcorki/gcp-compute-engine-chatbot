@@ -23,8 +23,8 @@ client_secret*.json
 *.log
 *.log.*
 *.out
-deployment.log
 server.log
+!deployment.log
 
 # ==============================================================================
 # 3. Archives & Deploy Artifacts

@@ -1,0 +1,601 @@
+=== GCP Compute Engine 챗봇 배포 로그 시작 ===
+[2026-09-15 14:58:14] [INFO] GCP Compute Engine 챗봇 배포 프로세스를 시작합니다.
+[2026-09-15 14:58:14] [INFO] 단계 1: gcloud 인증 및 활성 프로젝트 확인
+[2026-09-15 14:58:14] [INFO] 실행 명령: gcloud auth print-access-token
+[2026-09-15 14:58:15] [INFO] 결과 출력:
+[REDACTED_ACCESS_TOKEN]
+[2026-09-15 14:58:15] [INFO] 실행 명령: gcloud config set project iceu-songpa30
+[2026-09-15 14:58:16] [WARN] 표준 에러 출력:
+[environment: untagged] Read more to tag: g.co/cloud/project-env-tag.
+Updated property [core/project].
+[2026-09-15 14:58:16] [INFO] 실행 명령: gcloud config set compute/zone us-central1-a
+[2026-09-15 14:58:18] [WARN] 표준 에러 출력:
+Updated property [compute/zone].
+[2026-09-15 14:58:18] [INFO] 프로젝트: iceu-songpa30, 존: us-central1-a, 인스턴스명: gemini-chatbot-vm
+[2026-09-15 14:58:18] [INFO] 단계 2: Compute Engine 서비스 계정에 Secret Manager 조회 권한(secretAccessor) 부여
+[2026-09-15 14:58:18] [INFO] 실행 명령: gcloud projects add-iam-policy-binding iceu-songpa30 --member="serviceAccount:584903808975-compute@developer.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
+[2026-09-15 14:58:20] [INFO] 결과 출력:
+bindings:
+- members:
+  - serviceAccount:service-584903808975@gcp-sa-aiplatform.iam.gserviceaccount.com
+  role: roles/aiplatform.serviceAgent
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/aiplatform.user
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/bigquery.admin
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/cloudaicompanion.user
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/cloudquotas.admin
+- members:
+  - serviceAccount:584903808975@cloudservices.gserviceaccount.com
+  role: roles/compute.instanceGroupManagerServiceAgent
+- members:
+  - serviceAccount:service-584903808975@compute-system.iam.gserviceaccount.com
+  role: roles/compute.serviceAgent
+- members:
+  - serviceAccount:584903808975-compute@developer.gserviceaccount.com
+  - user:hrd@aicore.co.kr
+  - user:phj@aicore.co.kr
+  - user:phj@iceu.kr
+  - user:sjpark0911@aicore.co.kr
+  - user:songpa30@iceu.kr
+  role: roles/editor
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/firebase.admin
+- members:
+  - serviceAccount:service-584903808975@gcp-sa-notebooks.iam.gserviceaccount.com
+  role: roles/notebooks.serviceAgent
+- members:
+  - user:hrd@aicore.co.kr
+  - user:phj@aicore.co.kr
+  - user:sjpark0911@aicore.co.kr
+  role: roles/owner
+- members:
+  - user:hrd@aicore.co.kr
+  - user:phj@aicore.co.kr
+  - user:phj@iceu.kr
+  - user:sjpark0911@aicore.co.kr
+  - user:songpa30@iceu.kr
+  role: roles/resourcemanager.projectIamAdmin
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/secretmanager.admin
+- members:
+  - serviceAccount:584903808975-compute@developer.gserviceaccount.com
+  role: roles/secretmanager.secretAccessor
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/serviceusage.apiKeysAdmin
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/serviceusage.serviceUsageConsumer
+- members:
+  - user:songpa30@iceu.kr
+  role: roles/storage.objectAdmin
+etag: BwZbfzzdX-4=
+version: 1
+[2026-09-15 14:58:20] [WARN] 표준 에러 출력:
+Updated IAM policy for project [iceu-songpa30].
+[2026-09-15 14:58:20] [INFO] 단계 3: 챗봇 서비스 포트(tcp:8000) 인바운드 방화벽 규칙 확인/생성
+[2026-09-15 14:58:20] [INFO] 실행 명령: gcloud compute firewall-rules describe allow-chatbot-8000
+[2026-09-15 14:58:22] [ERROR] 표준 에러 출력:
+ERROR: (gcloud.compute.firewall-rules.describe) Could not fetch resource:
+ - The resource 'projects/iceu-songpa30/global/firewalls/allow-chatbot-8000' was not found
+[2026-09-15 14:58:22] [INFO] 방화벽 규칙 'allow-chatbot-8000' 생성 중...
+[2026-09-15 14:58:22] [INFO] 실행 명령: gcloud compute firewall-rules create allow-chatbot-8000 --project=iceu-songpa30 --allow=tcp:8000 --target-tags=http-server --description="Allow inbound traffic on port 8000 for Gemini chatbot"
+[2026-09-15 14:58:31] [INFO] 결과 출력:
+NAME                NETWORK  DIRECTION  PRIORITY  ALLOW     DENY  DISABLED
+allow-chatbot-8000  default  INGRESS    1000      tcp:8000        False
+[2026-09-15 14:58:31] [WARN] 표준 에러 출력:
+Creating firewall...
+..Created [https://www.googleapis.com/compute/v1/projects/iceu-songpa30/global/firewalls/allow-chatbot-8000].
+done.
+[2026-09-15 14:58:31] [INFO] 단계 4: Compute Engine VM 인스턴스 확인 및 생성
+[2026-09-15 14:58:31] [INFO] 실행 명령: gcloud compute instances describe gemini-chatbot-vm --zone=us-central1-a
+[2026-09-15 14:58:33] [ERROR] 표준 에러 출력:
+ERROR: (gcloud.compute.instances.describe) Could not fetch resource:
+ - The resource 'projects/iceu-songpa30/zones/us-central1-a/instances/gemini-chatbot-vm' was not found
+[2026-09-15 14:58:33] [INFO] 인스턴스 'gemini-chatbot-vm' 생성 중... (e2-medium, debian-12, pd-balanced 10GB)
+[2026-09-15 14:58:33] [INFO] 실행 명령: gcloud compute instances create gemini-chatbot-vm --project=iceu-songpa30 --zone=us-central1-a --machine-type=e2-medium --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default --metadata=enable-osconfig=TRUE --maintenance-policy=MIGRATE --provisioning-model=STANDARD --service-account=584903808975-compute@developer.gserviceaccount.com --scopes=https://www.googleapis.com/auth/cloud-platform --tags=http-server --create-disk=auto-delete=yes,boot=yes,image-family=debian-12,image-project=debian-cloud,mode=rw,size=10,type=pd-balanced
+[2026-09-15 14:58:47] [INFO] 결과 출력:
+NAME               ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP   STATUS
+gemini-chatbot-vm  us-central1-a  e2-medium                  10.128.0.4   34.10.109.31  RUNNING
+[2026-09-15 14:58:47] [WARN] 표준 에러 출력:
+Created [https://www.googleapis.com/compute/v1/projects/iceu-songpa30/zones/us-central1-a/instances/gemini-chatbot-vm].
+[2026-09-15 14:58:47] [INFO] 인스턴스 'gemini-chatbot-vm' 생성이 완료되었습니다.
+[2026-09-15 14:58:47] [INFO] VM 부팅 및 SSH 데몬 초기화를 위해 25초 대기합니다...
+[2026-09-15 14:59:12] [INFO] 단계 5: 배포용 아카이브 파일(chatbot_deploy.tar.gz) 생성
+[2026-09-15 14:59:12] [INFO] 배포 아카이브 생성 완료: chatbot_deploy.tar.gz (24,015 bytes)
+[2026-09-15 14:59:12] [INFO] 단계 6: VM 인스턴스로 소스코드 아카이브 전송 (SCP)
+[2026-09-15 14:59:12] [INFO] 실행 명령: gcloud compute scp chatbot_deploy.tar.gz gemini-chatbot-vm:~/chatbot_deploy.tar.gz --zone=us-central1-a --quiet
+[2026-09-15 14:59:35] [ERROR] 표준 에러 출력:
+WARNING: The private SSH key file for gcloud does not exist.
+WARNING: The public SSH key file for gcloud does not exist.
+WARNING: The PuTTY PPK SSH key file for gcloud does not exist.
+WARNING: You do not have an SSH key for gcloud.
+WARNING: SSH keygen will be executed to generate a key.
+Updating project ssh metadata...
+.......................................................................Updated [https://www.googleapis.com/compute/v1/projects/iceu-songpa30].
+..done.
+Waiting for SSH key to propagate.
+The host key is not cached for this server:
+  34.10.109.31 (port 22)
+You have no guarantee that the server is the computer you
+think it is.
+The server's ssh-ed25519 key fingerprint is:
+  ssh-ed25519 255 SHA256:roiW2Vw0vjXeAV/ID4Azo8Mr3AbN2hxCx5rqaJtf7EQ
+If you trust this host, enter "y" to add the key to Plink's
+cache and carry on connecting.
+If you want to carry on connecting just once, without adding
+the key to the cache, enter "n".
+If you do not trust this host, press Return to abandon the
+connection.
+Store key in cache? (y/n, Return cancels connection, i for more info) pscp: unable to open ~/chatbot_deploy.tar.gz: no such file or directory
+ERROR: (gcloud.compute.scp) [C:\Users\butte\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\sdk\pscp.exe] exited with return code [1].
+[2026-09-15 14:59:35] [ERROR] 명령어 실행 중 예외 발생: 명령어 실패 (코드 1): gcloud compute scp chatbot_deploy.tar.gz gemini-chatbot-vm:~/chatbot_deploy.tar.gz --zone=us-central1-a --quiet
+WARNING: The private SSH key file for gcloud does not exist.
+WARNING: The public SSH key file for gcloud does not exist.
+WARNING: The PuTTY PPK SSH key file for gcloud does not exist.
+WARNING: You do not have an SSH key for gcloud.
+WARNING: SSH keygen will be executed to generate a key.
+Updating project ssh metadata...
+.......................................................................Updated [https://www.googleapis.com/compute/v1/projects/iceu-songpa30].
+..done.
+Waiting for SSH key to propagate.
+The host key is not cached for this server:
+  34.10.109.31 (port 22)
+You have no guarantee that the server is the computer you
+think it is.
+The server's ssh-ed25519 key fingerprint is:
+  ssh-ed25519 255 SHA256:roiW2Vw0vjXeAV/ID4Azo8Mr3AbN2hxCx5rqaJtf7EQ
+If you trust this host, enter "y" to add the key to Plink's
+cache and carry on connecting.
+If you want to carry on connecting just once, without adding
+the key to the cache, enter "n".
+If you do not trust this host, press Return to abandon the
+connection.
+Store key in cache? (y/n, Return cancels connection, i for more info) pscp: unable to open ~/chatbot_deploy.tar.gz: no such file or directory
+ERROR: (gcloud.compute.scp) [C:\Users\butte\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\sdk\pscp.exe] exited with return code [1].
+
+[2026-09-15 15:03:46] [INFO] === GCP Compute Engine 챗봇 배포 프로세스를 재개합니다 ===
+[2026-09-15 15:03:46] [INFO] 단계 1: 인스턴스 외부 공인 IP 확인
+[2026-09-15 15:03:46] [INFO] 로컬 명령 실행: gcloud compute instances describe gemini-chatbot-vm --zone=us-central1-a --format="get(networkInterfaces[0].accessConfigs[0].natIP)"
+[2026-09-15 15:03:48] [INFO] 출력:
+34.10.109.31
+[2026-09-15 15:03:48] [INFO] 인스턴스 'gemini-chatbot-vm'의 외부 IP: 34.10.109.31
+[2026-09-15 15:03:48] [INFO] 단계 2: 배포용 아카이브 파일(chatbot_deploy.tar.gz) 생성
+[2026-09-15 15:03:48] [INFO] 배포 아카이브 생성 완료: chatbot_deploy.tar.gz (24,015 bytes)
+[2026-09-15 15:03:48] [INFO] 단계 3: VM 인스턴스로 소스코드 전송 (PSCP)
+[2026-09-15 15:03:48] [INFO] 파일 전송 (PSCP): chatbot_deploy.tar.gz -> welshcorki@34.10.109.31:/tmp/chatbot_deploy.tar.gz
+[2026-09-15 15:03:51] [INFO] PSCP 출력: chatbot_deploy.tar.gz     | 4 kB |   4.0 kB/s | ETA: 00:00:04 |  17%
+chatbot_deploy.tar.gz     | 23 kB |  23.5 kB/s | ETA: 00:00:00 | 100%
+[2026-09-15 15:03:51] [INFO] 소스코드 아카이브 전송 성공
+[2026-09-15 15:03:51] [INFO] 단계 4: VM 내부 챗봇 환경 구성, Secret Manager 연동 및 Systemd 서비스 등록
+[2026-09-15 15:03:51] [INFO] 원격 SSH 명령 실행 (welshcorki@34.10.109.31):
+set -e
+
+echo "[1/6] 시스템 패키지 업데이트 및 python3-venv 설치 중..."
+sudo apt-get update -y > /dev/null
+sudo apt-get install -y python3-pip python3-venv > /dev/null
+
+echo "[2/6] 챗봇 작업 디렉터리 준비 및 파일 압축 해제..."
+mkdir -p /home/welshcorki/chatbot
+tar -xzf /tmp/chatbot_deploy.tar.gz -C /home/welshcorki/chatbot
+
+echo "[3/6] Python 가상환경 생성 및 의존성 패키지 설치 중..."
+cd /home/welshcorki/chatbot
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
+./venv/bin/pip install --upgrade pip > /dev/null
+./venv/bin/pip install -r requirements.txt > /dev/null
+
+echo "[4/6] GCP Secret Manager에서 GEMINI_API_KEY 가져오는 중..."
+SECRET_VAL=$(gcloud secrets versions access latest --secret="projects/584903808975/secrets/GEMINI_API_KEY")
+if [ -z "$SECRET_VAL" ]; then
+    echo "ERROR: Secret Manager에서 키를 조회하지 못했습니다."
+    exit 1
+fi
+echo "GEMINI_API_KEY=$SECRET_VAL" > /home/welshcorki/chatbot/.env
+chmod 600 /home/welshcorki/chatbot/.env
+echo "Secret Manager 키 연동 완료 (.env 안전하게 생성됨)"
+
+echo "[5/6] Systemd 서비스(chatbot.service) 유닛 파일 등록 중..."
+sudo tee /etc/systemd/system/chatbot.service > /dev/null <<EOF
+[Unit]
+Description=Gemini Web Chatbot Service (Compute Engine)
+After=network.target
+
+[Service]
+User=welshcorki
+WorkingDirectory=/home/welshcorki/chatbot
+EnvironmentFile=/home/welshcorki/chatbot/.env
+ExecStart=/home/welshcorki/chatbot/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "[6/6] chatbot.service 시작 및 자동 실행 등록..."
+sudo systemctl daemon-reload
+sudo systemctl enable chatbot.service
+sudo systemctl restart chatbot.service
+sleep 2
+
+sudo systemctl status chatbot.service --no-pager
+[2026-09-15 15:04:42] [INFO] 원격 출력:
+[1/6] 시스템 패키지 업데이트 및 python3-venv 설치 중...
+[2/6] 챗봇 작업 디렉터리 준비 및 파일 압축 해제...
+[3/6] Python 가상환경 생성 및 의존성 패키지 설치 중...
+[4/6] GCP Secret Manager에서 GEMINI_API_KEY 가져오는 중...
+[2026-09-15 15:04:42] [ERROR] 원격 에러/알림:
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC contains: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.36.0 /usr/local/share/perl/5.36.0 /usr/lib/x86_64-linux-gnu/perl5/5.36 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.36 /usr/share/perl/5.36 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 7, <> line 102.)
+debconf: falling back to frontend: Teletype
+dpkg-preconfigure: unable to re-open stdin: 
+ERROR: (gcloud.secrets.versions.access) HTTPError 404: <!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 404 (Not Found)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}
+  </style>
+  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>
+  <p><b>404.</b> <ins>That’s an error.</ins>
+  <p>The requested URL <code>/v1/projects/iceu-songpa30/secrets/projects/584903808975/secrets/GEMINI_API_KEY/versions/latest:access?alt=json</code> was not found on this server.  <ins>That’s all we know.</ins>
+[2026-09-15 15:05:25] [INFO] === GCP Compute Engine 챗봇 배포 프로세스를 재개합니다 ===
+[2026-09-15 15:05:25] [INFO] 단계 1: 인스턴스 외부 공인 IP 확인
+[2026-09-15 15:05:25] [INFO] 로컬 명령 실행: gcloud compute instances describe gemini-chatbot-vm --zone=us-central1-a --format="get(networkInterfaces[0].accessConfigs[0].natIP)"
+[2026-09-15 15:05:27] [INFO] 출력:
+34.10.109.31
+[2026-09-15 15:05:27] [INFO] 인스턴스 'gemini-chatbot-vm'의 외부 IP: 34.10.109.31
+[2026-09-15 15:05:27] [INFO] 단계 2: 배포용 아카이브 파일(chatbot_deploy.tar.gz) 생성
+[2026-09-15 15:05:27] [INFO] 배포 아카이브 생성 완료: chatbot_deploy.tar.gz (24,015 bytes)
+[2026-09-15 15:05:27] [INFO] 단계 3: VM 인스턴스로 소스코드 전송 (PSCP)
+[2026-09-15 15:05:27] [INFO] 파일 전송 (PSCP): chatbot_deploy.tar.gz -> welshcorki@34.10.109.31:/tmp/chatbot_deploy.tar.gz
+[2026-09-15 15:05:30] [INFO] PSCP 출력: chatbot_deploy.tar.gz     | 4 kB |   4.0 kB/s | ETA: 00:00:04 |  17%
+chatbot_deploy.tar.gz     | 23 kB |  23.5 kB/s | ETA: 00:00:00 | 100%
+[2026-09-15 15:05:30] [INFO] 소스코드 아카이브 전송 성공
+[2026-09-15 15:05:30] [INFO] 단계 4: VM 내부 챗봇 환경 구성, Secret Manager 연동 및 Systemd 서비스 등록
+[2026-09-15 15:05:30] [INFO] 원격 SSH 명령 실행 (welshcorki@34.10.109.31):
+set -e
+
+echo "[1/6] 시스템 패키지 업데이트 및 python3-venv 설치 중..."
+sudo apt-get update -y > /dev/null
+sudo apt-get install -y python3-pip python3-venv > /dev/null
+
+echo "[2/6] 챗봇 작업 디렉터리 준비 및 파일 압축 해제..."
+mkdir -p /home/welshcorki/chatbot
+tar -xzf /tmp/chatbot_deploy.tar.gz -C /home/welshcorki/chatbot
+
+echo "[3/6] Python 가상환경 생성 및 의존성 패키지 설치 중..."
+cd /home/welshcorki/chatbot
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
+./venv/bin/pip install --upgrade pip > /dev/null
+./venv/bin/pip install -r requirements.txt > /dev/null
+
+echo "[4/6] GCP Secret Manager에서 GEMINI_API_KEY 가져오는 중..."
+SECRET_VAL=$(gcloud secrets versions access latest --secret="GEMINI_API_KEY" --project="584903808975")
+if [ -z "$SECRET_VAL" ]; then
+    echo "ERROR: Secret Manager에서 키를 조회하지 못했습니다."
+    exit 1
+fi
+echo "GEMINI_API_KEY=$SECRET_VAL" > /home/welshcorki/chatbot/.env
+chmod 600 /home/welshcorki/chatbot/.env
+echo "Secret Manager 키 연동 완료 (.env 안전하게 생성됨)"
+
+echo "[5/6] Systemd 서비스(chatbot.service) 유닛 파일 등록 중..."
+sudo tee /etc/systemd/system/chatbot.service > /dev/null <<EOF
+[Unit]
+Description=Gemini Web Chatbot Service (Compute Engine)
+After=network.target
+
+[Service]
+User=welshcorki
+WorkingDirectory=/home/welshcorki/chatbot
+EnvironmentFile=/home/welshcorki/chatbot/.env
+ExecStart=/home/welshcorki/chatbot/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "[6/6] chatbot.service 시작 및 자동 실행 등록..."
+sudo systemctl daemon-reload
+sudo systemctl enable chatbot.service
+sudo systemctl restart chatbot.service
+sleep 2
+
+sudo systemctl status chatbot.service --no-pager
+[2026-09-15 15:05:39] [INFO] 원격 출력:
+[1/6] 시스템 패키지 업데이트 및 python3-venv 설치 중...
+[2/6] 챗봇 작업 디렉터리 준비 및 파일 압축 해제...
+[3/6] Python 가상환경 생성 및 의존성 패키지 설치 중...
+[4/6] GCP Secret Manager에서 GEMINI_API_KEY 가져오는 중...
+Secret Manager 키 연동 완료 (.env 안전하게 생성됨)
+[5/6] Systemd 서비스(chatbot.service) 유닛 파일 등록 중...
+[6/6] chatbot.service 시작 및 자동 실행 등록...
+● chatbot.service - Gemini Web Chatbot Service (Compute Engine)
+     Loaded: loaded (/etc/systemd/system/chatbot.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2026-09-15 06:05:37 UTC; 2s ago
+   Main PID: 3757 (uvicorn)
+      Tasks: 1 (limit: 4616)
+     Memory: 45.5M
+        CPU: 1.280s
+     CGroup: /system.slice/chatbot.service
+             └─3757 /home/welshcorki/chatbot/venv/bin/python3 /home/welshcorki/chatbot/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+
+Sep 15 06:05:37 gemini-chatbot-vm systemd[1]: Started chatbot.service - Gemini Web Chatbot Service (Compute Engine).
+Sep 15 06:05:38 gemini-chatbot-vm uvicorn[3757]: INFO:     Started server process [3757]
+Sep 15 06:05:38 gemini-chatbot-vm uvicorn[3757]: INFO:     Waiting for application startup.
+Sep 15 06:05:38 gemini-chatbot-vm uvicorn[3757]: INFO:     Application startup complete.
+Sep 15 06:05:38 gemini-chatbot-vm uvicorn[3757]: INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-09-15 15:05:39] [WARN] 원격 에러/알림:
+Created symlink /etc/systemd/system/multi-user.target.wants/chatbot.service → /etc/systemd/system/chatbot.service.
+[2026-09-15 15:05:39] [INFO] 단계 5: 외부 공인 IP를 통한 챗봇 웹 서비스 헬스체크
+[2026-09-15 15:05:39] [INFO] 챗봇 웹 서비스 URL: http://34.10.109.31:8000
+[2026-09-15 15:05:39] [INFO] 서비스 안정화를 위해 5초 대기 후 헬스체크 실행...
+[2026-09-15 15:05:44] [INFO] 로컬 명령 실행: curl -s -m 10 http://34.10.109.31:8000/api/models
+[2026-09-15 15:05:44] [INFO] 출력:
+{"models":[{"id":"models/gemini-3.8-flash","name":"Gemini 3.8 Flash","badge":"Flash","description":"최신 고속 차세대 모델 + Google Search + Thinking (기본 권장)","is_default":true},{"id":"models/gemini-3.7-flash","name":"Gemini 3.7 Flash","badge":"Flash 3.7","description":"다목적 고성능 플래시 모델 + Google Search","is_default":false}]}
+[2026-09-15 15:06:26] [INFO] === GCP Compute Engine 챗봇 배포 프로세스를 재개합니다 ===
+[2026-09-15 15:06:26] [INFO] 단계 1: 인스턴스 외부 공인 IP 확인
+[2026-09-15 15:06:26] [INFO] 로컬 명령 실행: gcloud compute instances describe gemini-chatbot-vm --zone=us-central1-a --format="get(networkInterfaces[0].accessConfigs[0].natIP)"
+[2026-09-15 15:06:28] [INFO] 출력:
+34.10.109.31
+[2026-09-15 15:06:28] [INFO] 인스턴스 'gemini-chatbot-vm'의 외부 IP: 34.10.109.31
+[2026-09-15 15:06:28] [INFO] 단계 2: 배포용 아카이브 파일(chatbot_deploy.tar.gz) 생성
+[2026-09-15 15:06:28] [INFO] 배포 아카이브 생성 완료: chatbot_deploy.tar.gz (24,015 bytes)
+[2026-09-15 15:06:28] [INFO] 단계 3: VM 인스턴스로 소스코드 전송 (PSCP)
+[2026-09-15 15:06:28] [INFO] 파일 전송 (PSCP): chatbot_deploy.tar.gz -> welshcorki@34.10.109.31:/tmp/chatbot_deploy.tar.gz
+[2026-09-15 15:06:31] [INFO] PSCP 출력: chatbot_deploy.tar.gz     | 4 kB |   4.0 kB/s | ETA: 00:00:04 |  17%
+chatbot_deploy.tar.gz     | 23 kB |  23.5 kB/s | ETA: 00:00:00 | 100%
+[2026-09-15 15:06:31] [INFO] 소스코드 아카이브 전송 성공
+[2026-09-15 15:06:31] [INFO] 단계 4: VM 내부 챗봇 환경 구성, Secret Manager 연동 및 Systemd 서비스 등록
+[2026-09-15 15:06:31] [INFO] 원격 SSH 명령 실행 (welshcorki@34.10.109.31):
+set -e
+
+echo "[1/6] 시스템 패키지 업데이트 및 python3-venv 설치 중..."
+sudo apt-get update -y > /dev/null
+sudo apt-get install -y python3-pip python3-venv > /dev/null
+
+echo "[2/6] 챗봇 작업 디렉터리 준비 및 파일 압축 해제..."
+mkdir -p /home/welshcorki/chatbot
+tar -xzf /tmp/chatbot_deploy.tar.gz -C /home/welshcorki/chatbot
+
+echo "[3/6] Python 가상환경 생성 및 의존성 패키지 설치 중..."
+cd /home/welshcorki/chatbot
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+fi
+./venv/bin/pip install --upgrade pip > /dev/null
+./venv/bin/pip install -r requirements.txt > /dev/null
+
+echo "[4/6] GCP Secret Manager에서 GEMINI_API_KEY 가져오는 중..."
+SECRET_VAL=$(gcloud secrets versions access latest --secret="GEMINI_API_KEY" --project="584903808975")
+if [ -z "$SECRET_VAL" ]; then
+    echo "ERROR: Secret Manager에서 키를 조회하지 못했습니다."
+    exit 1
+fi
+echo "GEMINI_API_KEY=$SECRET_VAL" > /home/welshcorki/chatbot/.env
+chmod 600 /home/welshcorki/chatbot/.env
+echo "Secret Manager 키 연동 완료 (.env 안전하게 생성됨)"
+
+echo "[5/6] Systemd 서비스(chatbot.service) 유닛 파일 등록 중..."
+sudo tee /etc/systemd/system/chatbot.service > /dev/null <<EOF
+[Unit]
+Description=Gemini Web Chatbot Service (Compute Engine)
+After=network.target
+
+[Service]
+User=welshcorki
+WorkingDirectory=/home/welshcorki/chatbot
+EnvironmentFile=/home/welshcorki/chatbot/.env
+ExecStart=/home/welshcorki/chatbot/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "[6/6] chatbot.service 시작 및 자동 실행 등록..."
+sudo systemctl daemon-reload
+sudo systemctl enable chatbot.service
+sudo systemctl restart chatbot.service
+sleep 2
+
+sudo systemctl status chatbot.service --no-pager
+[2026-09-15 15:06:40] [INFO] 원격 출력:
+[1/6] 시스템 패키지 업데이트 및 python3-venv 설치 중...
+[2/6] 챗봇 작업 디렉터리 준비 및 파일 압축 해제...
+[3/6] Python 가상환경 생성 및 의존성 패키지 설치 중...
+[4/6] GCP Secret Manager에서 GEMINI_API_KEY 가져오는 중...
+Secret Manager 키 연동 완료 (.env 안전하게 생성됨)
+[5/6] Systemd 서비스(chatbot.service) 유닛 파일 등록 중...
+[6/6] chatbot.service 시작 및 자동 실행 등록...
+● chatbot.service - Gemini Web Chatbot Service (Compute Engine)
+     Loaded: loaded (/etc/systemd/system/chatbot.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2026-09-15 06:06:38 UTC; 2s ago
+   Main PID: 4312 (uvicorn)
+      Tasks: 1 (limit: 4616)
+     Memory: 45.2M
+        CPU: 895ms
+     CGroup: /system.slice/chatbot.service
+             └─4312 /home/welshcorki/chatbot/venv/bin/python3 /home/welshcorki/chatbot/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+
+Sep 15 06:06:38 gemini-chatbot-vm systemd[1]: Started chatbot.service - Gemini Web Chatbot Service (Compute Engine).
+Sep 15 06:06:39 gemini-chatbot-vm uvicorn[4312]: INFO:     Started server process [4312]
+Sep 15 06:06:39 gemini-chatbot-vm uvicorn[4312]: INFO:     Waiting for application startup.
+Sep 15 06:06:39 gemini-chatbot-vm uvicorn[4312]: INFO:     Application startup complete.
+Sep 15 06:06:39 gemini-chatbot-vm uvicorn[4312]: INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2026-09-15 15:06:40] [INFO] 단계 5: 외부 공인 IP를 통한 챗봇 웹 서비스 헬스체크
+[2026-09-15 15:06:40] [INFO] 챗봇 웹 서비스 URL: http://34.10.109.31:8000
+[2026-09-15 15:06:40] [INFO] 서비스 안정화를 위해 5초 대기 후 헬스체크 실행...
+[2026-09-15 15:06:45] [INFO] 로컬 명령 실행: curl -s -m 10 http://34.10.109.31:8000/api/models
+[2026-09-15 15:06:46] [INFO] 출력:
+{"models":[{"id":"models/gemini-3.8-flash","name":"Gemini 3.8 Flash","badge":"Flash","description":"최신 고속 차세대 모델 + Google Search + Thinking (기본 권장)","is_default":true},{"id":"models/gemini-3.7-flash","name":"Gemini 3.7 Flash","badge":"Flash 3.7","description":"다목적 고성능 플래시 모델 + Google Search","is_default":false}]}
+[2026-09-15 15:06:46] [INFO] [배포 완료 및 검증 성공] Compute Engine 챗봇 서비스가 정상 응답하고 있습니다!
+[2026-09-15 15:06:46] [INFO] 헬스체크 모델 목록 응답: {"models":[{"id":"models/gemini-3.8-flash","name":"Gemini 3.8 Flash","badge":"Flash","description":"최신 고속 차세대 모델 + Google Search + Thinking (기본 권장)","is_default":true},{"id":"models/gemini-3.7-flash","name":"Gemini 3.7 Flash","badge":"Flash 3.7","description":"다목적 고성능 플래시 모델 + Google Search","is_default":false}]}
+[2026-09-15 15:06:46] [INFO] 모든 배포 과정이 성공적으로 완료되었습니다. 접속 URL: http://34.10.109.31:8000
+[2026-09-15 15:45:19] [INFO] === Compute Engine HTTPS (Let's Encrypt + Nginx) 적용 시작 ===
+[2026-09-15 15:45:19] [INFO] 단계 1: 인스턴스 공인 IP 조회
+[2026-09-15 15:45:19] [INFO] 로컬 명령 실행: gcloud compute instances describe gemini-chatbot-vm --zone=us-central1-a --format="get(networkInterfaces[0].accessConfigs[0].natIP)"
+[2026-09-15 15:45:20] [INFO] 출력:
+34.10.109.31
+[2026-09-15 15:45:20] [INFO] 인스턴스 IP: 34.10.109.31
+[2026-09-15 15:45:20] [INFO] 적용 대상 도메인: 34.10.109.31.sslip.io
+[2026-09-15 15:45:20] [INFO] 단계 2: 방화벽 규칙(tcp:80, tcp:443) 생성 및 인스턴스 태그 설정
+[2026-09-15 15:45:20] [INFO] 로컬 명령 실행: gcloud compute firewall-rules describe allow-http-https
+[2026-09-15 15:45:21] [ERROR] 에러 출력:
+ERROR: (gcloud.compute.firewall-rules.describe) Could not fetch resource:
+ - The resource 'projects/iceu-songpa30/global/firewalls/allow-http-https' was not found
+[2026-09-15 15:45:21] [INFO] 로컬 명령 실행: gcloud compute firewall-rules create allow-http-https --project=iceu-songpa30 --allow=tcp:80,tcp:443 --target-tags=http-server,https-server --description="Allow HTTP and HTTPS inbound traffic"
+[2026-09-15 15:45:36] [INFO] 출력:
+NAME              NETWORK  DIRECTION  PRIORITY  ALLOW           DENY  DISABLED
+allow-http-https  default  INGRESS    1000      tcp:80,tcp:443        False
+[2026-09-15 15:45:36] [WARN] 에러 출력:
+Creating firewall...
+..Created [https://www.googleapis.com/compute/v1/projects/iceu-songpa30/global/firewalls/allow-http-https].
+done.
+[2026-09-15 15:45:36] [INFO] 로컬 명령 실행: gcloud compute instances add-tags gemini-chatbot-vm --zone=us-central1-a --tags=https-server,http-server
+[2026-09-15 15:45:43] [WARN] 에러 출력:
+Updated [https://www.googleapis.com/compute/v1/projects/iceu-songpa30/zones/us-central1-a/instances/gemini-chatbot-vm].
+[2026-09-15 15:45:43] [INFO] 단계 3: VM 내부 Nginx & Certbot 설치 및 Let's Encrypt SSL 인증서 발급
+[2026-09-15 15:45:43] [INFO] 원격 SSH 명령 실행 (welshcorki@34.10.109.31):
+set -e
+
+echo "[1/5] Nginx 및 Certbot 패키지 설치 중..."
+sudo apt-get update -y > /dev/null
+sudo apt-get install -y nginx certbot python3-certbot-nginx > /dev/null
+
+echo "[2/5] Nginx 리버스 프록시 설정 파일 생성 중 (34.10.109.31.sslip.io)..."
+sudo tee /etc/nginx/sites-available/chatbot > /dev/null <<'EOF'
+server {
+    listen 80;
+    server_name 34.10.109.31.sslip.io;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # SSE 스트리밍 필수 설정
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 600s;
+        proxy_set_header Connection '';
+        proxy_http_version 1.1;
+        chunked_transfer_encoding off;
+    }
+}
+EOF
+
+sudo ln -sf /etc/nginx/sites-available/chatbot /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl reload nginx
+
+echo "[3/5] Let's Encrypt 공인 SSL 인증서 발급 및 HTTPS 자동 구성..."
+sudo certbot --nginx -d 34.10.109.31.sslip.io --non-interactive --agree-tos --register-unsafely-without-email --redirect
+
+echo "[4/5] 챗봇 서비스 내부 바인딩(127.0.0.1:8000)으로 전환..."
+sudo sed -i 's/--host 0.0.0.0/--host 127.0.0.1/g' /etc/systemd/system/chatbot.service
+sudo systemctl daemon-reload
+sudo systemctl restart chatbot.service
+
+echo "[5/5] 서비스 구동 상태 확인..."
+sudo systemctl status nginx --no-pager
+sudo systemctl status chatbot.service --no-pager
+[2026-09-15 15:46:40] [INFO] 원격 출력:
+[1/5] Nginx 및 Certbot 패키지 설치 중...
+[2/5] Nginx 리버스 프록시 설정 파일 생성 중 (34.10.109.31.sslip.io)...
+[3/5] Let's Encrypt 공인 SSL 인증서 발급 및 HTTPS 자동 구성...
+Account registered.
+Requesting a certificate for 34.10.109.31.sslip.io
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/34.10.109.31.sslip.io/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/34.10.109.31.sslip.io/privkey.pem
+This certificate expires on 2026-12-14.
+These files will be updated when the certificate renews.
+Certbot has set up a scheduled task to automatically renew this certificate in the background.
+
+Deploying certificate
+Successfully deployed certificate for 34.10.109.31.sslip.io to /etc/nginx/sites-enabled/chatbot
+Congratulations! You have successfully enabled HTTPS on https://34.10.109.31.sslip.io
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+If you like Certbot, please consider supporting our work by:
+ * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+ * Donating to EFF:                    https://eff.org/donate-le
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+[4/5] 챗봇 서비스 내부 바인딩(127.0.0.1:8000)으로 전환...
+[5/5] 서비스 구동 상태 확인...
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2026-09-15 06:46:22 UTC; 18s ago
+       Docs: man:nginx(8)
+   Main PID: 6927 (nginx)
+      Tasks: 3 (limit: 4616)
+     Memory: 3.1M
+        CPU: 77ms
+     CGroup: /system.slice/nginx.service
+             ├─6927 "nginx: master process /usr/sbin/nginx -g daemon on; master_process on;"
+             ├─7032 "nginx: worker process"
+             └─7033 "nginx: worker process"
+
+Sep 15 06:46:22 gemini-chatbot-vm systemd[1]: Starting nginx.service - A high performance web server and a reverse proxy server...
+Sep 15 06:46:22 gemini-chatbot-vm systemd[1]: Started nginx.service - A high performance web server and a reverse proxy server.
+Sep 15 06:46:26 gemini-chatbot-vm systemd[1]: Reloading nginx.service - A high performance web server and a reverse proxy server...
+Sep 15 06:46:26 gemini-chatbot-vm nginx[7012]: 2026/09/15 06:46:26 [notice] 7012#7012: signal process started
+Sep 15 06:46:26 gemini-chatbot-vm systemd[1]: Reloaded nginx.service - A high performance web server and a reverse proxy server.
+● chatbot.service - Gemini Web Chatbot Service (Compute Engine)
+     Loaded: loaded (/etc/systemd/system/chatbot.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2026-09-15 06:46:40 UTC; 63ms ago
+   Main PID: 7057 (uvicorn)
+      Tasks: 1 (limit: 4616)
+     Memory: 5.4M
+        CPU: 52ms
+     CGroup: /system.slice/chatbot.service
+             └─7057 /home/welshcorki/chatbot/venv/bin/python3 /home/welshcorki/chatbot/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+
+Sep 15 06:46:40 gemini-chatbot-vm systemd[1]: Started chatbot.service - Gemini Web Chatbot Service (Compute Engine).
+[2026-09-15 15:46:40] [WARN] 원격 에러/알림:
+debconf: unable to initialize frontend: Dialog
+debconf: (Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+dpkg-preconfigure: unable to re-open stdin: 
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+[2026-09-15 15:46:40] [INFO] 단계 4: 외부 HTTPS 접속 및 SSL 검증
+[2026-09-15 15:46:40] [INFO] HTTPS 서비스 접속 URL: https://34.10.109.31.sslip.io/
+[2026-09-15 15:46:40] [INFO] 안정화를 위해 5초 대기 후 HTTPS 헬스체크 실행...
+[2026-09-15 15:46:45] [INFO] 로컬 명령 실행: curl -s -k -m 10 https://34.10.109.31.sslip.io/api/models
+[2026-09-15 15:46:46] [INFO] 출력:
+{"models":[{"id":"models/gemini-3.8-flash","name":"Gemini 3.8 Flash","badge":"Flash","description":"최신 고속 차세대 모델 + Google Search + Thinking (기본 권장)","is_default":true},{"id":"models/gemini-3.7-flash","name":"Gemini 3.7 Flash","badge":"Flash 3.7","description":"다목적 고성능 플래시 모델 + Google Search","is_default":false}]}
+[2026-09-15 15:46:46] [INFO] [성공] HTTPS를 통한 API 호출이 정상 작동합니다!
+[2026-09-15 15:46:46] [INFO] 모델 응답: {"models":[{"id":"models/gemini-3.8-flash","name":"Gemini 3.8 Flash","badge":"Flash","description":"최신 고속 차세대 모델 + Google Search + Thinking (기본 권장)","is_default":true},{"id":"models/gemini-3.7-flash","name":"Gemini 3.7 Flash","badge":"Flash 3.7","description":"다목적 고성능 플래시 모델 + Google Search","is_default":false}]}
+[2026-09-15 15:46:46] [INFO] === Compute Engine HTTPS 구성 완료 ===
