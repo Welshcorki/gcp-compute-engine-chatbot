@@ -92,25 +92,25 @@ HTTPS 환경을 구축하기 위해 Compute Engine 인스턴스 상에 다음과
 
 ```text
 gcp-compute-engine-chatbot/
-├── compute_engine/                     # Compute Engine 배포 및 실행 모듈
+├── compute_engine/                     # Compute Engine VM 배포 모듈 (IaaS)
 │   ├── frontend/                       # 프론트엔드 소스코드 (Vite 번들러)
-│   │   ├── src/
-│   │   │   ├── main.js                 # 상태 관리, SSE 통신, 음성인식, 마크다운 렌더링
-│   │   │   └── style.css               # Gemini 스타일 프리미엄 다크 디자인 시스템
-│   │   ├── index.html                  # 메인 HTML
-│   │   ├── vite.config.js              # build outDir -> ../static 설정
-│   │   └── package.json
-│   ├── static/                         # 프론트엔드 빌드 산출물 (FastAPI가 서빙)
-│   │   ├── assets/
-│   │   └── index.html
-│   ├── main.py                         # FastAPI 백엔드 (Interactions API 및 정적 파일 서빙)
-│   ├── requirements.txt                # 파이썬 의존성 패키지 목록
-│   ├── deploy_to_compute_engine.py     # Compute Engine 원클릭 자동 배포 스크립트
-│   ├── setup_https.py                  # Nginx + Let's Encrypt SSL 원클릭 보안 구성 스크립트
-│   ├── compute_engine_example.ipynb    # GCP Compute Engine API 실습 노트북
-│   └── deployment.log                  # 배포 실행 상세 기록
+│   ├── static/                         # 프론트엔드 빌드 산출물
+│   ├── main.py                         # FastAPI 백엔드
+│   ├── requirements.txt                # 파이썬 의존성 패키지
+│   ├── deploy_to_compute_engine.py     # VM 원클릭 자동 배포 스크립트
+│   ├── setup_https.py                  # Nginx + Let's Encrypt SSL 원클릭 구성
+│   └── compute_engine_example.ipynb    # GCP VM API 실습 노트북
+├── cloud_run/                          # Cloud Run 서버리스 컨테이너 배포 모듈 (PaaS)
+│   ├── frontend/                       # 프론트엔드 소스코드 (Vite)
+│   ├── static/                         # 프론트엔드 빌드 산출물
+│   ├── Dockerfile                      # 멀티 스테이지 최적화 컨테이너 빌드 파일
+│   ├── .dockerignore                   # 컨테이너 빌드 제외 규칙
+│   ├── main.py                         # FastAPI 백엔드 ($PORT 동적 바인딩)
+│   ├── requirements.txt                # 백엔드 의존성
+│   ├── deploy_to_cloud_run.py          # Cloud Run 원클릭 자동 빌드 & 배포 스크립트
+│   └── README.md                       # Cloud Run 상세 가이드
 ├── .gitignore                          # Git 제외 설정 파일
-└── README.md                           # 프로젝트 설명서
+└── README.md                           # 프로젝트 통합 설명서
 ```
 
 ---
@@ -191,6 +191,21 @@ export GEMINI_API_KEY="your_api_key"
 nohup uvicorn main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
 ```
 브라우저에서 `http://<외부_IP>:8000`으로 접속하여 챗봇을 사용하실 수 있습니다.
+
+---
+
+## ⚡ Google Cloud Run 서버리스 배포 가이드
+
+서버리스 완전 관리형 환경(Scale-to-Zero, 요청 없을 시 비용 0원, 자동 HTTPS)으로 운영하고자 할 경우 `cloud_run` 모듈을 사용합니다:
+
+### 원클릭 자동 빌드 & 배포 (권장)
+```bash
+# Cloud Build 원격 컨테이너 빌드, Secret Manager 연동, Cloud Run 배포를 전자동으로 실행
+python cloud_run/deploy_to_cloud_run.py
+```
+> 배포 완료 후 터미널에 생성된 공인 HTTPS 주소(`https://gemini-chatbot-run-xxxx.a.run.app`)로 즉시 접속 가능합니다.
+
+자세한 로컬 테스트 및 Docker 빌드 가이드는 [cloud_run/README.md](file:///c:/Users/butte/github/Project/gcp-compute-engine-chatbot/cloud_run/README.md)를 참고하세요.
 
 ---
 

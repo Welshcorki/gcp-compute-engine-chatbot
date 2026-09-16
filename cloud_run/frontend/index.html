@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini</title>
+  <!-- Google Fonts: Google Sans / Inter / Pretendard -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234285f4'%3E%3Cpath d='M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z'/%3E%3C/svg%3E">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <button id="new-chat-btn" class="icon-btn-pill" title="새 대화 시작">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span class="btn-text">새 대화</span>
+        </button>
+        <div class="logo-title">
+          <span class="logo-text">Gemini</span>
+          <span id="header-model-badge" class="header-badge">3.8 Flash</span>
+        </div>
+      </div>
+      
+      <div class="top-bar-right">
+        <div class="status-indicator" id="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">준비 완료</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="main-content">
+      <!-- Welcome Screen (Shown before chat starts) -->
+      <section class="welcome-screen" id="welcome-screen">
+        <h1 class="welcome-title">무엇을 도와드릴까요?</h1>
+        <p class="welcome-subtitle">Google의 차세대 Gemini 3.8 Flash와 3.7 Flash 모델로 자유롭게 대화해보세요.</p>
+        
+        <!-- Suggestions Chips -->
+        <div class="suggestion-chips">
+          <button class="chip" data-prompt="오늘 생산성을 높이기 위한 최고의 아침 루틴 3가지를 추천해줘.">
+            <span class="chip-icon">✨</span>
+            <span class="chip-text">생산성 높은 아침 루틴 추천</span>
+          </button>
+          <button class="chip" data-prompt="Python FastAPI로 비동기 스트리밍 챗봇을 구현하는 핵심 코드를 보여줘.">
+            <span class="chip-icon">💻</span>
+            <span class="chip-text">FastAPI 스트리밍 챗봇 코드 예제</span>
+          </button>
+          <button class="chip" data-prompt="Gemini 3.8 Flash와 3.7 Flash 모델의 주요 특징과 장점을 비교해줘.">
+            <span class="chip-icon">⚡</span>
+            <span class="chip-text">Gemini 3.8 vs 3.7 모델 비교</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Chat History (Shown when conversation is active) -->
+      <section class="chat-history hidden" id="chat-history">
+        <div class="messages-container" id="messages-container">
+          <!-- Chat messages appended dynamically here -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Input Container -->
+    <footer class="input-wrapper">
+      <div class="input-pill-container" id="input-pill-container">
+        <!-- Add Button (Plus) -->
+        <button id="add-btn" class="action-btn plus-btn" title="옵션 및 도구">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="12" y1="6" x2="12" y2="18"></line>
+            <line x1="6" y1="12" x2="18" y2="12"></line>
+          </svg>
+        </button>
+
+        <!-- Plus Menu Dropup -->
+        <div class="plus-menu hidden" id="plus-menu">
+          <div class="plus-menu-item" id="menu-clear-chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>대화 내용 지우기</span>
+          </div>
+          <div class="plus-menu-item" id="menu-system-prompt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>시스템 상태 확인</span>
+          </div>
+        </div>
+
+        <!-- Text Input Area -->
+        <div class="textarea-container">
+          <textarea
+            id="chat-input"
+            rows="1"
+            placeholder="Gemini에게 물어보기"
+            autocomplete="off"
+          ></textarea>
+        </div>
+
+        <!-- Right Action Controls -->
+        <div class="right-controls">
+          <!-- Model Selector Dropdown -->
+          <div class="model-selector-wrapper" id="model-selector-wrapper">
+            <button id="model-dropdown-btn" class="model-dropdown-btn" title="모델 선택">
+              <span id="selected-model-label">Flash</span>
+              <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div class="model-menu hidden" id="model-menu">
+              <div class="model-option active" data-model="gemini-3.8-flash" data-badge="Flash">
+                <div class="model-option-header">
+                  <span class="model-name">Gemini 3.8 Flash</span>
+                  <span class="tag-badge">기본 권장</span>
+                </div>
+                <span class="model-desc">최신 고속 차세대 플래시 모델</span>
+              </div>
+              <div class="model-option" data-model="gemini-3.7-flash" data-badge="Flash 3.7">
+                <div class="model-option-header">
+                  <span class="model-name">Gemini 3.7 Flash</span>
+                </div>
+                <span class="model-desc">다목적 고성능 플래시 모델</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Microphone Button for STT -->
+          <button id="mic-btn" class="action-btn mic-btn" title="음성으로 입력하기">
+            <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <span class="recording-pulse hidden" id="recording-pulse"></span>
+          </button>
+
+          <!-- Send Button -->
+          <button id="send-btn" class="action-btn send-btn" disabled title="메시지 보내기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Gemini는 부정확한 정보를 표시할 수 있으므로 중요한 내용은 다시 확인하세요.
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
