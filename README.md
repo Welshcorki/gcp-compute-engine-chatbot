@@ -92,20 +92,25 @@ HTTPS 환경을 구축하기 위해 Compute Engine 인스턴스 상에 다음과
 
 ```text
 gcp-compute-engine-chatbot/
-├── frontend/             # 프론트엔드 소스코드 (Vite 번들러)
-│   ├── src/
-│   │   ├── main.js       # 상태 관리, SSE 통신, 음성인식, 마크다운 렌더링
-│   │   └── style.css     # Gemini 스타일 프리미엄 다크 디자인 시스템
-│   ├── index.html        # 메인 HTML
-│   ├── vite.config.js    # build outDir -> ../static 설정
-│   └── package.json
-├── static/               # 프론트엔드 빌드 산출물 (FastAPI가 서빙)
-│   ├── assets/
-│   └── index.html
-├── main.py               # FastAPI 백엔드 (Interactions API 및 정적 파일 호스팅)
-├── requirements.txt      # 파이썬 의존성 패키지 목록
-├── .gitignore            # Git 제외 설정 파일
-└── README.md             # 프로젝트 설명서
+├── compute_engine/                     # Compute Engine 배포 및 실행 모듈
+│   ├── frontend/                       # 프론트엔드 소스코드 (Vite 번들러)
+│   │   ├── src/
+│   │   │   ├── main.js                 # 상태 관리, SSE 통신, 음성인식, 마크다운 렌더링
+│   │   │   └── style.css               # Gemini 스타일 프리미엄 다크 디자인 시스템
+│   │   ├── index.html                  # 메인 HTML
+│   │   ├── vite.config.js              # build outDir -> ../static 설정
+│   │   └── package.json
+│   ├── static/                         # 프론트엔드 빌드 산출물 (FastAPI가 서빙)
+│   │   ├── assets/
+│   │   └── index.html
+│   ├── main.py                         # FastAPI 백엔드 (Interactions API 및 정적 파일 서빙)
+│   ├── requirements.txt                # 파이썬 의존성 패키지 목록
+│   ├── deploy_to_compute_engine.py     # Compute Engine 원클릭 자동 배포 스크립트
+│   ├── setup_https.py                  # Nginx + Let's Encrypt SSL 원클릭 보안 구성 스크립트
+│   ├── compute_engine_example.ipynb    # GCP Compute Engine API 실습 노트북
+│   └── deployment.log                  # 배포 실행 상세 기록
+├── .gitignore                          # Git 제외 설정 파일
+└── README.md                           # 프로젝트 설명서
 ```
 
 ---
@@ -118,7 +123,7 @@ gcp-compute-engine-chatbot/
 - **Gemini API Key**: [Google AI Studio](https://aistudio.google.com/)에서 발급
 
 ### 2. 환경 변수 설정
-시스템 환경변수에 `GEMINI_API_KEY`를 등록하거나, 프로젝트 루트에 `.env` 파일을 생성합니다:
+시스템 환경변수에 `GEMINI_API_KEY`를 등록하거나, `compute_engine/` 디렉터리에 `.env` 파일을 생성합니다:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
@@ -127,6 +132,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 Conda 가상환경(`myenv`) 활성화 후 설치:
 ```bash
 conda activate myenv
+cd compute_engine
 pip install -r requirements.txt
 ```
 
@@ -138,12 +144,12 @@ npm install
 npm run build
 cd ..
 ```
-> 산출물이 자동으로 상위 `static/` 디렉터리에 번들링됩니다.
+> 산출물이 자동으로 `compute_engine/static/` 디렉터리에 번들링됩니다.
 
 ### 5. 서버 실행
 ```bash
-# Conda myenv 가상환경 적용 실행
-conda run -n myenv uvicorn main:app --host 127.0.0.1 --port 8000
+# compute_engine 디렉터리 내에서 실행
+uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 웹 브라우저에서 **`http://127.0.0.1:8000`**으로 접속합니다.
 
@@ -151,29 +157,37 @@ conda run -n myenv uvicorn main:app --host 127.0.0.1 --port 8000
 
 ## ☁️ GCP Compute Engine 배포 가이드
 
-GCP Compute Engine (Ubuntu/Debian Linux VM)에 배포할 때의 기본 절차입니다.
+### 방법 1. 로컬에서 원클릭 자동 배포 (권장)
+로컬 터미널에서 Google Cloud SDK(gcloud CLI)가 인증된 상태라면 아래 스크립트로 VM 생성 이후의 모든 설정(아카이브 패키징, PSCP 전송, systemd 서비스 등록, Secret Manager 연동)을 전자동으로 수행할 수 있습니다:
 
-### 1. 인스턴스 방화벽 설정
-- GCP 콘솔 > **VPC 네트워크** > **방화벽 규칙**에서 `tcp:8000` (또는 `tcp:80`) 포트 인바운드 허용
-
-### 2. VM 인스턴스 접속 및 설정
 ```bash
-# 저장소 클론
+# 1. 챗봇 서비스 자동 배포
+python compute_engine/deploy_to_compute_engine.py
+
+# 2. 공인 HTTPS 보안 적용 (Nginx + Let's Encrypt SSL)
+python compute_engine/setup_https.py
+```
+
+---
+
+### 방법 2. VM 인스턴스 직접 수동 배포
+GCP Compute Engine (Ubuntu/Debian Linux VM)에 직접 접속하여 배포할 때의 절차입니다:
+
+```bash
+# 1. 저장소 클론 및 compute_engine 서브 폴더 이동
 git clone https://github.com/your-username/gcp-compute-engine-chatbot.git
-cd gcp-compute-engine-chatbot
+cd gcp-compute-engine-chatbot/compute_engine
 
-# Python 및 Node.js 설치 (필요 시)
+# 2. Python 가상환경 구성 및 패키지 설치
 sudo apt update && sudo apt install -y python3-pip python3-venv
-
-# 가상환경 생성 및 패키지 설치
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# 환경변수 등록 (.env 파일 또는 export)
+# 3. 환경변수 등록 (.env 파일 또는 export)
 export GEMINI_API_KEY="your_api_key"
 
-# 백그라운드 서비스(systemd 또는 nohup) 실행
+# 4. 백그라운드 서비스(systemd 또는 nohup) 실행
 nohup uvicorn main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
 ```
 브라우저에서 `http://<외부_IP>:8000`으로 접속하여 챗봇을 사용하실 수 있습니다.

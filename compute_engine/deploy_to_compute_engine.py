@@ -9,7 +9,8 @@ from datetime import datetime
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-LOG_FILE = "deployment.log"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(BASE_DIR, "deployment.log")
 PLINK_EXE = r"C:\Users\butte\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\sdk\plink.exe"
 PSCP_EXE = r"C:\Users\butte\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\sdk\pscp.exe"
 PPK_KEY = os.path.expanduser(r"~\.ssh\google_compute_engine.ppk")
@@ -107,11 +108,11 @@ def main():
 
     # 2. 배포 아카이브 생성
     log("단계 2: 배포용 아카이브 파일(chatbot_deploy.tar.gz) 생성")
-    archive_name = "chatbot_deploy.tar.gz"
+    archive_name = os.path.join(BASE_DIR, "chatbot_deploy.tar.gz")
     with tarfile.open(archive_name, "w:gz") as tar:
-        tar.add("main.py", arcname="main.py")
-        tar.add("requirements.txt", arcname="requirements.txt")
-        tar.add("static", arcname="static")
+        tar.add(os.path.join(BASE_DIR, "main.py"), arcname="main.py")
+        tar.add(os.path.join(BASE_DIR, "requirements.txt"), arcname="requirements.txt")
+        tar.add(os.path.join(BASE_DIR, "static"), arcname="static")
     log(f"배포 아카이브 생성 완료: {archive_name} ({os.path.getsize(archive_name):,} bytes)")
 
     # 3. VM으로 파일 업로드

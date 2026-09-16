@@ -8,7 +8,8 @@ from datetime import datetime
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-LOG_FILE = "deployment.log"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_FILE = os.path.join(BASE_DIR, "deployment.log")
 PLINK_EXE = r"C:\Users\butte\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\sdk\plink.exe"
 PPK_KEY = os.path.expanduser(r"~\.ssh\google_compute_engine.ppk")
 
